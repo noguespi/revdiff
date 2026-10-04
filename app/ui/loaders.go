@@ -413,6 +413,7 @@ func (m *Model) triggerReload() tea.Cmd {
 	m.reviewed.loadSeq++
 	m.reviewed.cache = make(map[string]string)
 	m.reviewed.pending = make(map[string]uint64)
+	m.clearPendingJumps() // the reset-to-top contract above: no queued landing survives a reload
 	return tea.Batch(m.loadFiles(), m.loadCommits())
 }
 
@@ -588,8 +589,7 @@ func (m Model) handleFileLoaded(msg fileLoadedMsg) (tea.Model, tea.Cmd) {
 	// handle pending annotation list jump
 	if m.pendingAnnotJump != nil && m.pendingAnnotJump.File == msg.file {
 		a := *m.pendingAnnotJump
-		m.pendingAnnotJump = nil
-		m.nav.pendingHunkJump = nil
+		m.clearPendingJumps()
 		m.positionOnAnnotation(a)
 		return m, blameCmd
 	}
@@ -598,6 +598,15 @@ func (m Model) handleFileLoaded(msg fileLoadedMsg) (tea.Model, tea.Cmd) {
 	if m.nav.pendingHunkJump != nil {
 		m.applyPendingHunkJump()
 		m.centerViewportOnCursor()
+		return m, blameCmd
+	}
+
+	// handle the landing of a cross-file cursor motion; above the compact anchor and
+	// start-at-change so an explicit motion wins over the default startup position, and
+	// must return early because both would move the cursor again below it.
+	if m.nav.pendingBoundaryJump != nil {
+		m.applyPendingBoundaryJump()
+		m.syncTOCActiveSection()
 		return m, blameCmd
 	}
 

@@ -137,10 +137,12 @@ Pass `--start-at-change` only when the user explicitly asks for that cursor pref
 
 Pass `--filter-unreviewed` only when the user asks for the tree limited to files not marked reviewed; never infer it automatically. The `F` key toggles the same filter during the review.
 
+Pass `--cross-file-motion` when the review spans many files and the reader works through them in order — a wide branch diff, `--all-files`, or a long patch series — so `j`/`k` and the page motions carry straight from the end of one file into the top of the next, and from the top of a file into the bottom of the previous one. Skip it for small diffs and for single-file or `--stdin` reviews, where a stray keypress leaving the current file is a liability rather than a convenience.
+
 Run the launcher script:
 
 ```bash
-$SCRIPT_DIR/launch-revdiff.sh [base] [against] [--staged] [--untracked] [--filter-unreviewed] [--only=file1] [--all-files] [--exclude=prefix] [--description=text|--description-file=path]
+$SCRIPT_DIR/launch-revdiff.sh [base] [against] [--staged] [--untracked] [--filter-unreviewed] [--cross-file-motion] [--only=file1] [--all-files] [--exclude=prefix] [--description=text|--description-file=path]
 ```
 
 **IMPORTANT — long-running command**: The launcher blocks until the user finishes reviewing in the TUI overlay, which can exceed the default bash tool timeout. Set the bash timeout parameter to the **maximum your harness allows** (e.g. 1800000 or higher). Do NOT use `run_in_background` for this — background-task handling is unreliable for interactive TUI launchers. If the review outlasts the timeout cap, the fallback in Step 3 handles it.

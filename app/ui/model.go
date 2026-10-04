@@ -327,6 +327,7 @@ type modelConfigState struct {
 	noConfirmDiscard   bool               // skip confirmation prompt on discard quit
 	noConfirmReload    bool               // skip confirmation prompt on reload (R)
 	crossFileHunks     bool               // allow [ and ] to jump across file boundaries
+	crossFileMotion    bool               // allow cursor motion to continue across file boundaries
 	startAtChange      bool               // put the cursor on the first changed line when a file loads
 	treeWidthRatio     int                // 1-10 units for file tree panel
 	tabSpaces          string             // spaces to replace tabs with
@@ -364,8 +365,9 @@ type modeState struct {
 
 // navigationState holds cursor and navigation-adjacent state.
 type navigationState struct {
-	diffCursor      int   // index into file.lines for current cursor line
-	pendingHunkJump *bool // pending hunk jump after cross-file hunk navigation (true=first, false=last)
+	diffCursor          int   // index into file.lines for current cursor line
+	pendingHunkJump     *bool // pending hunk jump after cross-file hunk navigation (true=first, false=last)
+	pendingBoundaryJump *bool // pending boundary landing after cross-file motion (true=top, false=bottom)
 }
 
 // searchState holds all search lifecycle state.
@@ -749,6 +751,7 @@ type ModelConfig struct {
 	PageOverlap      int      // rows carried over from the previous screen on page up/down; 0 disables
 	Collapsed        bool     // start in collapsed diff mode
 	CrossFileHunks   bool     // allow [ and ] to jump across file boundaries
+	CrossFileMotion  bool     // allow cursor motion to continue across file boundaries
 	StartAtChange    bool     // put the cursor on the first changed line when a file loads
 	LineNumbers      bool     // show line numbers in diff gutter
 	ShowBlame        bool     // show blame gutter; requires Blamer
@@ -914,6 +917,7 @@ func NewModel(cfg ModelConfig) (Model, error) {
 			noConfirmDiscard:   cfg.NoConfirmDiscard,
 			noConfirmReload:    cfg.NoConfirmReload,
 			crossFileHunks:     cfg.CrossFileHunks,
+			crossFileMotion:    cfg.CrossFileMotion,
 			startAtChange:      cfg.StartAtChange,
 			treeWidthRatio:     cfg.TreeWidthRatio,
 			tabSpaces:          strings.Repeat(" ", cfg.TabWidth),

@@ -126,10 +126,12 @@ Pass `--start-at-change` only when the user explicitly asks for that cursor pref
 
 Pass `--filter-unreviewed` only when the user asks for the tree limited to files not marked reviewed; never infer it automatically. The `F` key toggles the same filter during the review.
 
+Pass `--cross-file-motion` when the review spans many files and the reader works through them in order — a wide branch diff, `--all-files`, or a long patch series — so `j`/`k` and the page motions carry straight from the end of one file into the top of the next, and from the top of a file into the bottom of the previous one. Skip it for small diffs and for single-file or `--stdin` reviews, where a stray keypress leaving the current file is a liability rather than a convenience.
+
 Run the launcher through the override-chain resolver:
 
 ```bash
-"$("${CLAUDE_SKILL_DIR}/scripts/resolve-launcher.sh" launch-revdiff.sh "${CLAUDE_PLUGIN_DATA}")" [base] [against] [--staged] [--untracked] [--filter-unreviewed] [--only=file1] [--all-files] [--exclude=prefix] [--description=text|--description-file=path]
+"$("${CLAUDE_SKILL_DIR}/scripts/resolve-launcher.sh" launch-revdiff.sh "${CLAUDE_PLUGIN_DATA}")" [base] [against] [--staged] [--untracked] [--filter-unreviewed] [--cross-file-motion] [--only=file1] [--all-files] [--exclude=prefix] [--description=text|--description-file=path]
 ```
 
 The resolver and launcher MUST run in the same bash invocation — the resolver runs as a sub-shell substitution so the resolved path is consumed immediately as the executable. The resolver checks `user → bundled` (see `references/install.md` for override paths) and prints the first-found absolute path. Fall-through to the bundled launcher is the default when no overrides exist.
