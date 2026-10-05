@@ -799,7 +799,7 @@ func (m Model) handleDiffAction(action keymap.Action) (tea.Model, tea.Cmd) {
 // the adjacent file once it hits the file boundary, and the direction it moves.
 // scroll_diff_* is absent — it moves the viewport, not the cursor, so it has no boundary to
 // reach — and so are Home/End and the vim screen-position motions, which are absolute jumps.
-func crossFileMotionAction(action keymap.Action) (forward, ok bool) {
+func (m Model) crossFileMotionAction(action keymap.Action) (forward, ok bool) {
 	switch action {
 	case keymap.ActionDown, keymap.ActionPageDown, keymap.ActionHalfPageDown:
 		return true, true
@@ -823,7 +823,7 @@ func (m *Model) handleDiffMovement(action keymap.Action) (bool, tea.Cmd) {
 		return false, nil
 	}
 
-	forward, crossable := crossFileMotionAction(action)
+	forward, crossable := m.crossFileMotionAction(action)
 	if !crossable || m.nav.diffCursor != prevCursor || m.annot.cursorOnAnnotation != prevAnnotation {
 		return true, nil // real movement, nothing to cross
 	}
@@ -831,6 +831,12 @@ func (m *Model) handleDiffMovement(action keymap.Action) (bool, tea.Cmd) {
 		return true, nil
 	}
 
+	// a mouse click can leave the tree cursor on a directory row; stepping from there would
+	// skip or repeat files, so step from the displayed file instead. a displayed file with no
+	// row in a filtered tree has no adjacent file to step to.
+	if m.tree.SelectedFile() == "" && !m.tree.SelectByPath(m.file.name) {
+		return true, nil
+	}
 	dir := sidepane.DirectionNext
 	if !forward {
 		dir = sidepane.DirectionPrev

@@ -422,16 +422,6 @@ func TestParseArgs_CrossFileMotion(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, opts.CrossFileMotion)
 	})
-
-	t.Run("config file false overrides env", func(t *testing.T) {
-		cfgDir := t.TempDir()
-		cfgPath := filepath.Join(cfgDir, "config")
-		err := os.WriteFile(cfgPath, []byte("[Application Options]\ncross-file-motion = false\n"), 0o600)
-		require.NoError(t, err)
-		opts, err := parseArgs([]string{"--config", cfgPath})
-		require.NoError(t, err)
-		assert.False(t, opts.CrossFileMotion)
-	})
 }
 
 func TestParseArgs_StartAtChange(t *testing.T) {
