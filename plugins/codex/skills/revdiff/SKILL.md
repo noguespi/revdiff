@@ -137,7 +137,7 @@ Pass `--start-at-change` only when the user explicitly asks for that cursor pref
 
 Pass `--filter-unreviewed` only when the user asks for the tree limited to files not marked reviewed; never infer it automatically. The `F` key toggles the same filter during the review.
 
-Pass `--cross-file-motion` when the review spans many files and the reader works through them in order — a wide branch diff, `--all-files`, or a long patch series — so `j`/`k` and the page motions carry straight from the end of one file into the top of the next, and from the top of a file into the bottom of the previous one. Skip it for small diffs and for single-file or `--stdin` reviews, where a stray keypress leaving the current file is a liability rather than a convenience.
+Pass `--cross-file-motion` only when the user explicitly asks for cursor motion to continue into adjacent files; never infer it automatically.
 
 Run the launcher script:
 

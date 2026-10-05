@@ -799,7 +799,7 @@ func (m Model) handleDiffAction(action keymap.Action) (tea.Model, tea.Cmd) {
 // the adjacent file once it hits the file boundary, and the direction it moves.
 // scroll_diff_* is absent — it moves the viewport, not the cursor, so it has no boundary to
 // reach — and so are Home/End and the vim screen-position motions, which are absolute jumps.
-func crossFileMotionAction(action keymap.Action) (forward bool, ok bool) {
+func crossFileMotionAction(action keymap.Action) (forward, ok bool) {
 	switch action {
 	case keymap.ActionDown, keymap.ActionPageDown, keymap.ActionHalfPageDown:
 		return true, true
@@ -813,9 +813,10 @@ func crossFileMotionAction(action keymap.Action) (forward bool, ok bool) {
 // handleDiffMovement applies a cursor or viewport motion, reporting whether the action was a
 // diff movement at all. A cross-file motion (see crossFileMotionAction) that fails to move
 // the cursor has reached the file boundary, so with the flag on it steps the tree to the
-// adjacent file and queues a landing at its top or bottom for the load to apply. One press
-// crosses at most one file, and only in the direction of the motion: the intent is queued
-// immediately before the load request, so exactly this load consumes it.
+// adjacent file and queues a landing at its top or bottom for that file's load to apply. One
+// press crosses at most one file. A press while a load is outstanding is ignored: stepping
+// again would skip a file that was never shown, and stepping back would leave the tree on one
+// file and the outstanding load on another.
 func (m *Model) handleDiffMovement(action keymap.Action) (bool, tea.Cmd) {
 	prevCursor, prevAnnotation := m.nav.diffCursor, m.annot.cursorOnAnnotation
 	if !m.applyDiffMovement(action) {
@@ -826,7 +827,7 @@ func (m *Model) handleDiffMovement(action keymap.Action) (bool, tea.Cmd) {
 	if !crossable || m.nav.diffCursor != prevCursor || m.annot.cursorOnAnnotation != prevAnnotation {
 		return true, nil // real movement, nothing to cross
 	}
-	if !m.cfg.crossFileMotion || m.file.singleFile || m.file.name == "" {
+	if !m.cfg.crossFileMotion || m.file.singleFile || m.file.name == "" || m.file.requestedPath != "" {
 		return true, nil
 	}
 
@@ -845,8 +846,9 @@ func (m *Model) handleDiffMovement(action keymap.Action) (bool, tea.Cmd) {
 	}
 	m.layout.focus = paneDiff
 	m.clearPendingJumps() // one landing intent in flight at a time, the latest motion wins
-	m.nav.pendingBoundaryJump = &forward
-	return true, m.requestFileDiff(selected)
+	cmd := m.requestFileDiff(selected)
+	m.nav.pendingBoundaryJump = &boundaryJump{forward: forward, seq: m.file.loadSeq}
+	return true, cmd
 }
 
 // applyDiffMovement performs a single diff-pane motion, returning false for actions it does
@@ -1082,13 +1084,9 @@ func (m *Model) clearPendingJumps() {
 	m.nav.pendingBoundaryJump = nil
 }
 
-// applyPendingBoundaryJump lands the cursor at the top (forward) or the bottom (backward) of
-// the file loaded after a cross-file motion, the way stepping to the next or previous file
-// does. Both helpers re-render and align the viewport to the cursor, so the pane shows the
-// new file alone.
-func (m *Model) applyPendingBoundaryJump() {
-	forward := *m.nav.pendingBoundaryJump
-	m.nav.pendingBoundaryJump = nil
+// landAtBoundary puts the cursor at the top (forward) or the bottom (backward) of the file
+// loaded after a cross-file motion. Both helpers re-render and align the viewport to the cursor.
+func (m *Model) landAtBoundary(forward bool) {
 	if forward {
 		m.moveDiffCursorToStart()
 		return

@@ -138,8 +138,10 @@ across files by concern to keep files under ~500 lines:
 - **`diffview.go`** — diff line rendering, gutters, line styling, search highlights
 - **`diffnav.go`** — cursor movement, hunk navigation, viewport sync, horizontal scroll. Cross-file
   motion: a cursor motion (`down`/`up`/page/half-page) that cannot move the cursor has reached a file
-  boundary, so with `--cross-file-motion` it steps the tree one file, queues the landing intent
-  (`nav.pendingBoundaryJump`) and requests that file's load. `clearPendingJumps()` drops every queued
+  boundary, so with `--cross-file-motion` it steps the tree one file, requests that file's load and
+  queues the landing (`nav.pendingBoundaryJump`) tagged with that load's sequence, so no other load
+  consumes it. A boundary press while a load is outstanding is ignored. `clearPendingJumps()` drops
+  every queued
   landing intent and is called on manual navigation, before any `RefreshFilter` that can trigger a
   load, and by `triggerReload`, so a stale intent never hijacks an unrelated load
 - **`scrollbar.go`** — vertical scrollbar thumb post-processing on rendered diff/tree/TOC panes
